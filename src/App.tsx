@@ -14,8 +14,14 @@ import {
   Pizza,
   Info,
   RefreshCcw,
-  BookOpen
+  BookOpen,
+  Pencil,
+  Brain,
+  Sparkles,
+  Loader2,
+  MessageSquare
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 // --- Types ---
 type SlideProps = {
@@ -52,19 +58,38 @@ const HamsterGif = () => (
 
 const Slide1 = ({ onNext }: { onNext: () => void }) => (
   <div className="flex flex-col items-center justify-center min-h-full text-center space-y-8 py-10">
+    <motion.div 
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className="bg-neon-cyan/20 border border-neon-cyan/40 px-4 py-2 rounded-full flex items-center gap-2"
+    >
+      <Target size={18} className="text-neon-cyan" />
+      <span className="text-sm font-black tracking-widest text-neon-cyan uppercase">
+        Today's Goal: I can identify the main idea of a story!
+      </span>
+    </motion.div>
+
     <div className="flex flex-col items-center gap-6">
       <motion.div 
         initial={{ scale: 0 }} 
         animate={{ scale: 1 }} 
         className="relative"
       >
-        <div className="w-64 h-64 md:w-80 md:h-80 bg-cyber-lime/10 rounded-3xl overflow-hidden flex items-center justify-center shadow-[0_0_50px_rgba(223,255,0,0.3)] border-4 border-cyber-lime/50">
+        <div className="w-64 h-64 md:w-80 md:h-80 bg-cyber-lime/10 rounded-3xl overflow-hidden flex items-center justify-center shadow-[0_0_50px_rgba(223,255,0,0.3)] border-4 border-cyber-lime/50 relative">
           <img 
             src="https://i.postimg.cc/VLRQ4m0L/download.gif" 
             alt="Spy Hamster" 
             className="w-full h-full object-contain"
             referrerPolicy="no-referrer"
           />
+          {/* Scan Line Effect */}
+          <motion.div 
+            animate={{ top: ['0%', '100%', '0%'] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "linear" }}
+            className="absolute left-0 w-full h-1 bg-cyber-lime/50 shadow-[0_0_15px_rgba(223,255,0,0.8)] z-10"
+          />
+          {/* Grid Overlay */}
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-20 pointer-events-none" />
         </div>
         <motion.div 
           animate={{ y: [0, -5, 0] }} 
@@ -85,16 +110,28 @@ const Slide1 = ({ onNext }: { onNext: () => void }) => (
       </p>
     </div>
 
-    <div className="glass-panel max-w-md py-4 px-8">
-      <p className="text-lg">
-        Is your classroom hamster secretly a spy? 🐹🕵️‍♂️ 
-        <br/>
-        <span className="text-sm opacity-70 mt-2 block">Click below to start your training!</span>
-      </p>
+    <div className="glass-panel max-w-lg py-6 px-10 border-2 border-neon-cyan/30 bg-neon-cyan/5 relative overflow-hidden group">
+      <motion.div 
+        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        transition={{ repeat: Infinity, duration: 1.5 }}
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-neon-cyan/10 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"
+      />
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center justify-center gap-2 text-sunset-orange font-black text-xs tracking-[0.3em] uppercase">
+          <AlertCircle size={16} />
+          Incoming Mission Alert
+        </div>
+        <p className="text-xl md:text-2xl font-bold leading-tight">
+          "Every spy story has a <span className="text-cyber-lime underline decoration-2 underline-offset-4">Big Boss</span>... but can you find the <span className="text-neon-cyan underline decoration-2 underline-offset-4">Big Boss Idea</span>?"
+        </p>
+        <p className="text-sm opacity-80 italic">
+          Barnaby is watching. Are you ready to decode his secrets? 🕵️‍♂️🐹
+        </p>
+      </div>
     </div>
 
-    <button onClick={onNext} className="btn-primary text-xl py-4 px-10 group mt-4">
-      START MISSION
+    <button onClick={onNext} className="btn-primary text-xl py-4 px-12 group mt-4 shadow-[0_0_30px_rgba(0,245,255,0.4)] hover:shadow-[0_0_50px_rgba(0,245,255,0.6)] transition-all">
+      ACCEPT MISSION
       <ChevronRight className="inline-block ml-2 group-hover:translate-x-2 transition-transform" />
     </button>
   </div>
@@ -627,7 +664,12 @@ const Slide9 = ({ onNext, onPrev, addXP }: SlideProps) => {
   return (
     <div className="flex flex-col h-full space-y-4 p-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-neon-cyan">The Social Media Spy</h2>
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-neon-cyan/20 rounded-lg">
+            <MessageSquare className="text-neon-cyan" size={24} />
+          </div>
+          <h2 className="text-2xl font-bold text-neon-cyan">The Social Media Spy</h2>
+        </div>
         <HamsterGif />
       </div>
       <p className="text-lg">What is the "Big Boss" point they are trying to make?</p>
@@ -659,6 +701,140 @@ const Slide9 = ({ onNext, onPrev, addXP }: SlideProps) => {
               <span className="text-base font-bold">{opt}</span>
             </button>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SlideWritingMission = ({ onNext, onPrev, addXP }: SlideProps) => {
+  const [input, setInput] = useState('');
+  const [feedback, setFeedback] = useState<{ text: string; type: 'success' | 'error' | 'hint' } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+
+  const starters = [
+    "The main idea is...",
+    "Barnaby is a spy because...",
+    "The most important part is...",
+    "I think the story is about..."
+  ];
+
+  const checkResponse = async () => {
+    if (!input.trim()) return;
+    setLoading(true);
+    setFeedback(null);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `You are a friendly Spy Academy Instructor. A student is trying to identify the main idea of a story about Barnaby, a classroom hamster who is secretly a spy.
+        
+        Story context: Barnaby is a secret agent in training. He runs on a wheel, practices laser grids with toothpicks, and watches the room for suspicious activity.
+        
+        Student response: "${input}"
+        
+        Rules for your feedback:
+        1. If the student is off-task (talking about unrelated things like video games, pizza, or being silly), provide "Immediate Corrective Feedback" by gently reminding them of the mission and asking them to focus on Barnaby the spy.
+        2. If they are close but missing the "Big Boss Idea" (Barnaby being a spy), give a helpful hint.
+        3. If they correctly identify that the main idea is Barnaby being a spy, praise them enthusiastically.
+        
+        Respond in JSON format:
+        {
+          "isCorrect": boolean,
+          "feedback": "Your friendly instructor feedback here",
+          "type": "success" | "error" | "hint"
+        }`,
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      const result = JSON.parse(response.text);
+      setFeedback({ text: result.feedback, type: result.type });
+      setIsCorrect(result.isCorrect);
+      if (result.isCorrect) addXP(100);
+    } catch (error) {
+      console.error("AI Error:", error);
+      setFeedback({ text: "Radio silence from HQ! Try again, agent.", type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full space-y-4 p-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-neon-cyan/20 rounded-lg">
+            <Pencil className="text-neon-cyan" size={24} />
+          </div>
+          <h2 className="text-2xl font-bold text-neon-cyan">Final Mission: Decode the Idea</h2>
+        </div>
+        <HamsterGif />
+      </div>
+
+      <div className="flex-1 flex flex-col space-y-4">
+        <div className="glass-panel p-4 border-l-4 border-cyber-lime bg-cyber-lime/5">
+          <div className="flex items-center gap-2 text-cyber-lime font-bold mb-2">
+            <Brain size={18} />
+            <span>Mission Objective</span>
+          </div>
+          <p className="text-lg italic">"In your own words, what is the Big Boss Idea of Barnaby's story?"</p>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {starters.map((starter, i) => (
+              <button
+                key={i}
+                onClick={() => setInput(starter)}
+                className="text-xs bg-white/5 hover:bg-neon-cyan/20 border border-white/10 hover:border-neon-cyan px-3 py-1 rounded-full transition-all"
+              >
+                {starter}
+              </button>
+            ))}
+          </div>
+          
+          <div className="relative">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your secret report here..."
+              className="w-full h-32 bg-gray-900/50 border-2 border-white/10 rounded-xl p-4 text-lg focus:border-neon-cyan outline-none transition-all resize-none"
+            />
+            <div className="absolute bottom-3 right-3 text-white/20">
+              <Pencil size={20} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={checkResponse}
+            disabled={loading || !input.trim() || isCorrect}
+            className="btn-primary py-3 px-10 flex items-center gap-2 disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
+            {isCorrect ? "MISSION COMPLETE" : "SEND TO HQ"}
+          </button>
+
+          <AnimatePresence>
+            {feedback && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-4 rounded-xl border-2 w-full max-w-md text-center font-bold ${
+                  feedback.type === 'success' ? 'bg-cyber-lime/20 border-cyber-lime text-cyber-lime' :
+                  feedback.type === 'error' ? 'bg-sunset-orange/20 border-sunset-orange text-sunset-orange' :
+                  'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
+                }`}
+              >
+                {feedback.text}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
@@ -792,6 +968,7 @@ export default function App() {
     <Slide7 onNext={next} onPrev={prev} addXP={addXP} />,
     <Slide8 onNext={next} onPrev={prev} addXP={addXP} />,
     <Slide9 onNext={next} onPrev={prev} addXP={addXP} />,
+    <SlideWritingMission onNext={next} onPrev={prev} addXP={addXP} />,
     <Slide10 onPrev={prev} xp={xp} />
   ];
 
@@ -802,7 +979,7 @@ export default function App() {
         <div className="absolute top-0 left-0 w-full h-2 bg-white/5 z-20">
           <motion.div 
             initial={{ width: 0 }}
-            animate={{ width: `${((currentSlide + 1) / 11) * 100}%` }}
+            animate={{ width: `${((currentSlide + 1) / 12) * 100}%` }}
             className="h-full bg-neon-cyan shadow-[0_0_10px_rgba(0,245,255,0.8)]"
           />
         </div>
@@ -843,7 +1020,7 @@ export default function App() {
           </button>
 
           <div className="flex space-x-2">
-            {[...Array(11)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <div 
                 key={i} 
                 className={`w-2 h-2 rounded-full transition-all ${i === currentSlide ? 'bg-neon-cyan w-4' : 'bg-white/20'}`}
