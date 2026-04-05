@@ -800,7 +800,11 @@ const SlideWritingMission = ({ onNext, onPrev, addXP }: SlideProps) => {
           <div className="relative">
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+                setIsCorrect(false);
+                setFeedback(null);
+              }}
               placeholder="Type your secret report here..."
               className="w-full h-32 bg-gray-900/50 border-2 border-white/10 rounded-xl p-4 text-lg focus:border-neon-cyan outline-none transition-all resize-none"
             />
@@ -813,7 +817,7 @@ const SlideWritingMission = ({ onNext, onPrev, addXP }: SlideProps) => {
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={checkResponse}
-            disabled={loading || !input.trim() || isCorrect}
+            disabled={loading || !input.trim()}
             className="btn-primary py-3 px-10 flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
@@ -953,7 +957,7 @@ export default function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [xp, setXp] = useState(0);
 
-  const next = () => setCurrentSlide(prev => Math.min(prev + 1, 10));
+  const next = () => setCurrentSlide(prev => Math.min(prev + 1, 11));
   const prev = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
   const addXP = (amount: number) => setXp(prev => prev + amount);
 
@@ -1030,8 +1034,8 @@ export default function App() {
 
           <button 
             onClick={next} 
-            disabled={currentSlide === 10}
-            className={`flex items-center space-x-2 font-bold transition-all ${currentSlide === 10 ? 'opacity-0 pointer-events-none' : 'text-neon-cyan hover:scale-105 active:scale-95'}`}
+            disabled={currentSlide === 11}
+            className={`flex items-center space-x-2 font-bold transition-all ${currentSlide === 11 ? 'opacity-0 pointer-events-none' : 'text-neon-cyan hover:scale-105 active:scale-95'}`}
           >
             <span className="hidden sm:inline uppercase tracking-widest text-xs">Next</span>
             <div className="w-10 h-10 rounded-full border-2 border-neon-cyan flex items-center justify-center">
