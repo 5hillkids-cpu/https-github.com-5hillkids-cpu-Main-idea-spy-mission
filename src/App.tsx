@@ -763,6 +763,15 @@ const SlideWritingMission = ({ onNext, onPrev, addXP }: SlideProps) => {
     }
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (input.trim() && !isCorrect && !loading) {
+        checkResponse();
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [input]);
+
   return (
     <div className="flex flex-col h-full space-y-4 p-2">
       <div className="flex items-center justify-between">
@@ -809,21 +818,12 @@ const SlideWritingMission = ({ onNext, onPrev, addXP }: SlideProps) => {
               className="w-full h-32 bg-gray-900/50 border-2 border-white/10 rounded-xl p-4 text-lg focus:border-neon-cyan outline-none transition-all resize-none"
             />
             <div className="absolute bottom-3 right-3 text-white/20">
-              <Pencil size={20} />
+              {loading ? <Loader2 className="animate-spin text-neon-cyan" /> : <Pencil size={20} />}
             </div>
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-3">
-          <button
-            onClick={checkResponse}
-            disabled={loading || !input.trim()}
-            className="btn-primary py-3 px-10 flex items-center gap-2 disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="animate-spin" /> : <Sparkles size={20} />}
-            {isCorrect ? "MISSION COMPLETE" : "SEND TO HQ"}
-          </button>
-
           <AnimatePresence>
             {feedback && (
               <motion.div
